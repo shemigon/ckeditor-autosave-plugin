@@ -18,6 +18,10 @@
         url = document.getElementById("AUTO_SAVE_URL").value,
         ajaxActive = false;
 
+    /**
+     * Serializes a given object
+     * @param data an object
+     */
     function serialize(data) {
         var parts = [];
         for(var k in data) {
@@ -25,14 +29,18 @@
         }
         return parts.join("&");
     }
+
+    /**
+     * Makes a POST request to the server
+     * @param url Make request to
+     * @param data Serialized data
+     * @param callback Function that will be executed on success
+     */
     function post(url, data, callback) {
-        var xhr;
-        if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
-            xhr = new XMLHttpRequest();
-        }
-        else {// code for IE6, IE5
-            xhr = new ActiveXObject("Microsoft.XMLHTTP");
-        }
+        var xhr = window.XMLHttpRequest?
+            new XMLHttpRequest(): // IE7+, Firefox, Chrome, Opera, Safari
+            new ActiveXObject("Microsoft.XMLHTTP"); // IE6, IE5
+
         xhr.onreadystatechange = function() {
             if (xhr.readyState == 4) {
                 if(xhr.status == 200) {
