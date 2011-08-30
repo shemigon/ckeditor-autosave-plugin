@@ -25,5 +25,5 @@ Author
 ------
 
 **Boris Shemigon**
-+ http://twitter.com/shemigon
-+ htpp://github.com/shemigon
++http://twitter.com/shemigon
++htpp://github.com/shemigon
