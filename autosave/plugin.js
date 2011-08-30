@@ -1,12 +1,13 @@
 /**
- * Autosave plugin for CKEditor (requires jQuery)
+ * Autosave plugin for CKEditor
  * 
  * CKEDITOR.config.autosave_delay - delay in seconds before request is sent (located in config.js)
+ * CKEDITOR.config.autosave_extra_post_data - object with extra data to be passed to the server with POST request
  * #AUTO_SAVE_URL - input (usually hidden) with save url (located on the page)
  * 
  * Server's supposed to send back {status: ok|error, (optional message: text)}
  *
- * Place it in plugins/autosave directory
+ * Place it in plugins/autosave directory and don't forget to add 'autosave' to config.extraPlugins
  * @author Boris Shemigon <i@boris.co>
  */
 
@@ -14,31 +15,70 @@
     var pluginName = 'autosave';
 
     var timeOutId = 0,
-        delay = CKEDITOR.config.autosave_delay || 1, // in seconds
-        url = $('#AUTO_SAVE_URL').val(),
+        url = document.getElementById("AUTO_SAVE_URL").value,
         ajaxActive = false;
+
+    function serialize(data) {
+        var parts = [];
+        for(var k in data) {
+            parts.push(k + "=" + data[k]);
+        }
+        return parts.join("&");
+    }
+    function post(url, data, callback) {
+        var xhr;
+        if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+            xhr = new XMLHttpRequest();
+        }
+        else {// code for IE6, IE5
+            xhr = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                if(xhr.status == 200) {
+                    var response = {};
+                    try {
+                        response = eval("(" + xhr.responseText + ")");
+                    }
+                    catch(e) {
+                        throw "Wrong JSON formatting";
+                    }
+                    if(typeof callback === "function") {
+                        callback(response);
+                    }
+                }
+                //TODO: Add handlers for other error codes
+            }
+        }
+        xhr.open("POST", url, true);
+        xhr.send(serialize(data));
+    }
 
     if(url) {
         var startTimer = function(event) {
             if(timeOutId) {
                 clearTimeout(timeOutId);
             }
+            var delay = CKEDITOR.config.autosave_delay;
             timeOutId = setTimeout(onTimer, delay*1000, event);
         }
         var onTimer = function (event) {
             if(ajaxActive) {
                 startTimer(event);
             }
-            else {
+            else if(event.editor.checkDirty()) {
                 ajaxActive = true;
-                $.post(url, {
-                    content: event.editor.getData()
-                }, function(response) {
-                    ajaxActive = false;
-                    if(response.status !== 'ok') {
-                        alert(response.message || 'Unknown error happened');
+                var data = CKEDITOR.config.autosave_extra_post_data;
+                data['content'] = encodeURIComponent(event.editor.getData());
+                post(url,
+                    data,
+                    function(response) {
+                        ajaxActive = false;
+                        if(response.status !== 'ok') {
+                            alert(response.message || 'Unknown error happened');
+                        }
                     }
-                }, 'json');
+                );
             }
         }
         
@@ -52,3 +92,12 @@
         throw 'AUTO_SAVE_URL hidden input not found';
     }
 })();
+
+/**
+ * Delay in seconds
+ */
+CKEDITOR.config.autosave_delay = 3;
+/**
+ * It serves to provide additional data for server in POST request
+ */
+CKEDITOR.config.autosave_extra_post_data = {};
